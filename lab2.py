@@ -93,10 +93,7 @@ def generateNodes():
 	for node in root.findall("node"):
 		lat = float(node.get("lat"))
 		lon = float(node.get("lon"))
-		latSec = 3600 - round((lat - int(lat)) * 3600)
-		lonSec = round((lon - int(lon)) * 3600)
-		elev =  elevs[(latSec * ROW_COL) + lonSec]
-		nodes[node.get("id")] = (lat, lon, (lat * latMeters), (lon * lonMeters), elev)
+		nodes[node.get("id")] = (lat, lon, (lat * latMeters), (lon * lonMeters), smoothDatElevation(lat, lon))
 
 #Generates the graph of ways represented as a dictionary with node-key to a list of neighbors-value
 def generateGraph():
