@@ -30,7 +30,7 @@ def gradientDescent():
 	stepper = 1.2
 
 	while wi != prevWi:
-		dWi = [0 for i in range(features)]]
+		dWi = [0 for i in range(features)]
 		for example in examples:
 			pathNodes = example[:-3]
 			xs = []
@@ -54,12 +54,14 @@ def getElevChange(pathNodes):
 		dE += nodes[pathNodes[i+1]][-1] - nodes[pathNodes[i]][-1]
 	return dE
 
+#Sums the XY distance of each node and neighbor node in the path
 def getDistChange(pathNodes):
 	dD = 0
 	for i in range(len(pathNodes) - 1):
-		dD += sqrt(pow(nodes[pathNodes[i+1]][2] - nodes[pathNodes[i]][2], 2) + pow(nodes[pathNodes[i+1]][3] - nodes[pathNodes[i][3], 2))
+		dD += sqrt(pow(nodes[pathNodes[i+1]][2] - nodes[pathNodes[i]][2], 2) + pow(nodes[pathNodes[i+1]][3] - nodes[pathNodes[i]][3], 2))
 	return dD
 
+#Uses interpolation to find the elevation of a given lat and lon location
 def smoothDatElevation(lat, lon):
 	lat, lon = getLatLonSeconds(lat, lon)
 
@@ -77,13 +79,15 @@ def smoothDatElevation(lat, lon):
 	mDiff = lon - bMid[1]
 	return (((1 - mDiff) * bMid[2]) * (bDiff * tMid[2]))
 
+#Convert lat and lon to seconds
 def getLatLonSeconds(lat, lon):
 	latSec = 3600 - (lat - int(lat)) * 3600
-	lonSec = (lon - int(lon) * 3600
+	lonSec = (lon - int(lon)) * 3600
 	return (latSec, lonSec)
 
+#Retrieves elevation given lat and lon in seconds
 def getElevation(latSec, lonSec):
-	return elevs[(latSex * ROW_COL) + lonSec]
+	return elevs[(latSec * ROW_COL) + lonSec]
 
 #Reads in elevation file and generates a dictionary of node-key and tuple-value pairs
 #The tuple representation (latitude, longitude, latitude in meters, longitude in meters, elevation
@@ -212,6 +216,6 @@ if __name__ == "__main__":
 	tree = readXML("dbv.osm")
 	generateNodes()
 	generateGraph()
-	
-	while(input("Search (Y/N):") == "Y"):
-		print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
+	print(nodes)	
+	#while(input("Search (Y/N):") == "Y"):
+	#	print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
