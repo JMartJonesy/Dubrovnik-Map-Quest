@@ -89,7 +89,7 @@ def getElevation(latSec, lonSec):
 #The tuple representation (latitude, longitude, latitude in meters, longitude in meters, elevation
 def generateNodes():
 	root = tree.getroot()
-	elevs = getElevs("N42E018.hgt")
+	getElevs("N42E018.hgt")
 	for node in root.findall("node"):
 		lat = float(node.get("lat"))
 		lon = float(node.get("lon"))
@@ -117,7 +117,6 @@ def getElevs(fileName):
 		elevs = array.array('h')
 		elevs.fromfile(fila, ROW_COL * ROW_COL)
 	elevs.byteswap()
-	return elevs
 
 #A* search from start to goal
 def aStar(start, goal):
