@@ -30,34 +30,39 @@ def readXML(fileName):
 def readWalks(fileName):
 	for line in open(fileName):
 		example = line.strip().split(",")
-		examples.append((example[:-4], [example[-4]] + [example[-3]] + [example[-1]]))
+		examples.append((example[:-4], [float(example[-4])] + [float(example[-3])] + [example[-1]]))
 
 #Runs a gradient descent to find the wi values that minimize the square error
 def gradientDescent():
+	global wi
 	wi = [0 for i in range(features)]
 	prevWi = [1 for i in range(features)]
-	stepper = 1.2
+	stepper = .2
 
 	while wi != prevWi:
 		dWi = [0 for i in range(features)]
 		tests = ceil(.6 * len(examples))
-		for example in examples[:test]:
-			pathNodes = example[:-3]
+		for example in examples[:tests]:
 			xs = []
-			xs.append(getElevChange(pathNodes))
-			xs.append(getDistChange(pathNodes))
-			y = (example[-3] * 60) + example[-2]
+			xs.append(getElevChange(example[0]))
+			xs.append(getDistChange(example[0]))
+			y = (example[1][0] * 60) + example[1][1]
 			for i in range(features):
+				print(y, linearRegression(xs))
 				dWi[i] += -1 * (y - linearRegression(xs)) * xs[i]
+		prevWi = list(wi)
 		for i in range(features):
 			wi[i] -= stepper * dWi[i]
+		print(wi, prevWi)
+		input()
 
 #Linear equation for predicting the time to walk a path
 def linearRegression(xs):
 	hx = 0
 	for i in range(features):
 		hx += wi[i] * xs[i]
-	return (hx * (1/1.6))
+	print(hx)
+	return (hx / 1.6)
 
 #Sums the elevation change of each node and neighbor node in the path
 def getElevChange(pathNodes):
@@ -227,10 +232,9 @@ def constructPath(cameFrom, node):
 if __name__ == "__main__":
 	tree = readXML("dbv.osm")
 	readWalks("walks.txt")
-	print(examples)
 	generateNodes()
 	generateGraph()
-	#gradientDescent()
-	#print(wi)	
+	gradientDescent()
+	print(wi)	
 	#while(input("Search (Y/N):") == "Y"):
 	#	print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
