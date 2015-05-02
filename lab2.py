@@ -6,7 +6,7 @@
 import array
 from struct import unpack
 from queue import PriorityQueue
-from math import sqrt, pow, e, atan2, pi
+from math import sqrt, pow, e, atan2, pi, floor, ceil
 import xml.etree.ElementTree as XML
 
 ROW_COL = 3601
