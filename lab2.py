@@ -15,6 +15,7 @@ ROW_COL = 3601
 latMeters = 111085.70174301133
 lonMeters = 82014.96771009536
 
+tests = 0
 features = 2
 
 nodes = {}
@@ -30,16 +31,44 @@ def readXML(fileName):
 
 #Reads in walking data
 def readWalks(fileName):
+	global tests
 	for line in open(fileName):
 		example = line.strip().split(",")
-		examples.append((example[:-4], [float(example[-4])] + [float(example[-3])] + [example[-1]]))
+		examples.append((example[:-4], [(float(example[-4]) * 60) + float(example[-3])] + [example[-1]]))
+	tests = ceil(.6 * len(examples))
 
+#Find example(s) with closest elevation and distances to the given path
+#	if a single example is found then returns that examples time
+#	else calculates the average of the two found examples
+def nearestNeighbor(path):
+	xs = [getElevChange(path), getDistChange(path)]
+	minElevDiff = float("inf")
+	minDistDiff = float("inf")
+	minElevExp = None
+	minDistExp = None
+	for example in examples:
+		exElevChange = getElevChange(example[0])
+		exDistChange = getDistChange(example[0])
+		if abs(exElevChange - xs[0]) < minElevDiff:
+			minElevDiff = abs(exElevChange - xs[0])
+			minElevExp = example
+			
+		if abs(exDistChange - xs[1]) < minDistDiff:
+			minDistDiff = abs(exDistChange - xs[1])
+			minDistExp = example
+	
+	if(minElevExp == minDistExp):
+		return minElevExp[1][0]
+	else:
+		return ((minElevExp[1][0] + minDistExp[1][0]) / 2)
+
+#Using linear algebra to find wi values (F^T F)^-1 F^T T
 def linearAlgebraSolve():
-	global wi
+	global wi, tests
 	t = []
 	f = []
-	for example in examples[:ceil(.6 * len(examples))]:
-		t.append((example[1][0] * 60) + example[1][1])
+	for example in examples[:tests]:
+		t.append(example[1][0])
 		f.append([getElevChange(example[0]), getDistChange(example[0])])
 	
 	wi = dot(dot(inv(dot(transpose(f),f)),transpose(f)), t)
@@ -47,22 +76,19 @@ def linearAlgebraSolve():
 
 #Runs a gradient descent to find the wi values that minimize the square error
 def gradientDescent():
-	global wi
+	global wi, tests
 	wi = [0 for i in range(features)]
 	prevWi = [1 for i in range(features)]
-	stepper = .01
+	stepper = .0001
 
 	while wi != prevWi:
 		dWi = [0 for i in range(features)]
-		tests = ceil(.6 * len(examples))
 		for example in examples[:tests]:
-			xs = []
-			xs.append(getElevChange(example[0]))
-			xs.append(getDistChange(example[0]))
-			y = (example[1][0] * 60) + example[1][1]
+			xs = [getElevChange(example[0]), getDistChange(example[0])]
+			y = example[1][0]
 			for i in range(features):
-				print([y, linearRegression(xs)])
-				dWi[i] += (linearRegression(xs) - y) * xs[i]
+				print(pow(y-linearRegression(xs),2))
+				dWi[i] += -1 * (y-linearRegression(xs)) * xs[i]
 		prevWi = list(wi)
 		for i in range(features):
 			wi[i] -= stepper * dWi[i]
@@ -220,12 +246,9 @@ def naiSmith(nodeFrom, nodeTo):
 def toblers(nodeFrom, nodeTo):
 	if nodeFrom == nodeTo:
 		return 0
-	#km/h
-		   #lat To     #lat From
 	xSquare = (nodes[nodeTo][2] - nodes[nodeFrom][2]) * (nodes[nodeTo][2] - nodes[nodeFrom][2])
 	ySquare = (nodes[nodeTo][3] - nodes[nodeFrom][3]) * (nodes[nodeTo][3] - nodes[nodeFrom][3])
 	zSquare = (nodes[nodeTo][4] - nodes[nodeFrom][4]) * (nodes[nodeTo][4] - nodes[nodeFrom][4])
-	     #elev To    #elev From
 	dh = nodes[nodeTo][4] - nodes[nodeFrom][4]
 	dx = sqrt(xSquare + ySquare + zSquare)
 
@@ -246,7 +269,9 @@ if __name__ == "__main__":
 	readWalks("walks.txt")
 	generateNodes()
 	generateGraph()
-	gradientDescent()
-	#linearAlgebraSolve()
+	#gradientDescent()
+	linearAlgebraSolve()
+	print(nearestNeighbor(examples[10][0]))
+	
 	#while(input("Search (Y/N):") == "Y"):
 	#	print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
