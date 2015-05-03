@@ -6,6 +6,8 @@
 import array
 from struct import unpack
 from queue import PriorityQueue
+from numpy import transpose, dot
+from numpy.linalg import inv
 from math import sqrt, pow, e, atan2, pi, floor, ceil
 import xml.etree.ElementTree as XML
 
@@ -32,12 +34,23 @@ def readWalks(fileName):
 		example = line.strip().split(",")
 		examples.append((example[:-4], [float(example[-4])] + [float(example[-3])] + [example[-1]]))
 
+def linearAlgebraSolve():
+	global wi
+	t = []
+	f = []
+	for example in examples[:ceil(.6 * len(examples))]:
+		t.append((example[1][0] * 60) + example[1][1])
+		f.append([getElevChange(example[0]), getDistChange(example[0])])
+	
+	wi = dot(dot(inv(dot(transpose(f),f)),transpose(f)), t)
+	print(wi)
+
 #Runs a gradient descent to find the wi values that minimize the square error
 def gradientDescent():
 	global wi
 	wi = [0 for i in range(features)]
 	prevWi = [1 for i in range(features)]
-	stepper = .2
+	stepper = .01
 
 	while wi != prevWi:
 		dWi = [0 for i in range(features)]
@@ -48,8 +61,8 @@ def gradientDescent():
 			xs.append(getDistChange(example[0]))
 			y = (example[1][0] * 60) + example[1][1]
 			for i in range(features):
-				print(y, linearRegression(xs))
-				dWi[i] += -1 * (y - linearRegression(xs)) * xs[i]
+				print([y, linearRegression(xs)])
+				dWi[i] += (linearRegression(xs) - y) * xs[i]
 		prevWi = list(wi)
 		for i in range(features):
 			wi[i] -= stepper * dWi[i]
@@ -61,7 +74,6 @@ def linearRegression(xs):
 	hx = 0
 	for i in range(features):
 		hx += wi[i] * xs[i]
-	print(hx)
 	return (hx / 1.6)
 
 #Sums the elevation change of each node and neighbor node in the path
@@ -235,6 +247,6 @@ if __name__ == "__main__":
 	generateNodes()
 	generateGraph()
 	gradientDescent()
-	print(wi)	
+	#linearAlgebraSolve()
 	#while(input("Search (Y/N):") == "Y"):
 	#	print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
