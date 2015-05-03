@@ -15,6 +15,7 @@ ROW_COL = 3601
 latMeters = 111085.70174301133
 lonMeters = 82014.96771009536
 
+tree = None
 tests = 0
 features = 2
 
@@ -44,26 +45,19 @@ def nearestNeighbor(path):
 	xs = [getElevChange(path), getDistChange(path)]
 	minElevDiff = float("inf")
 	minDistDiff = float("inf")
-	minElevExp = None
-	minDistExp = None
-	for example in examples:
+	minExp = None
+	for example in examples[:tests]:
 		exElevChange = getElevChange(example[0])
 		exDistChange = getDistChange(example[0])
-		if abs(exElevChange - xs[0]) < minElevDiff:
+		if (abs(exElevChange - xs[0]) < minElevDiff) and (abs(exDistChange - xs[1]) < minDistDiff):
 			minElevDiff = abs(exElevChange - xs[0])
-			minElevExp = example
-			
-		if abs(exDistChange - xs[1]) < minDistDiff:
 			minDistDiff = abs(exDistChange - xs[1])
-			minDistExp = example
+			minExp = example
 	
-	if(minElevExp == minDistExp):
-		return minElevExp[1][0]
-	else:
-		return ((minElevExp[1][0] + minDistExp[1][0]) / 2)
+	return minExp[1][0]
 
 #Using linear algebra to find wi values (F^T F)^-1 F^T T
-def linearAlgebraSolve():
+def linearAlgebraSolver():
 	global wi, tests
 	t = []
 	f = []
@@ -72,35 +66,38 @@ def linearAlgebraSolve():
 		f.append([getElevChange(example[0]), getDistChange(example[0])])
 	
 	wi = dot(dot(inv(dot(transpose(f),f)),transpose(f)), t)
-	print(wi)
 
 #Runs a gradient descent to find the wi values that minimize the square error
 def gradientDescent():
 	global wi, tests
-	wi = [0 for i in range(features)]
-	prevWi = [1 for i in range(features)]
+	#wi = [0 for i in range(features)]
+	error = float("inf")
+	prevError = 0
 	stepper = .0001
 
-	while wi != prevWi:
+	while abs(error - prevError) > 30:
 		dWi = [0 for i in range(features)]
 		for example in examples[:tests]:
 			xs = [getElevChange(example[0]), getDistChange(example[0])]
 			y = example[1][0]
+			prevError = error
+			error = 0
 			for i in range(features):
-				print(pow(y-linearRegression(xs),2))
-				dWi[i] += -1 * (y-linearRegression(xs)) * xs[i]
-		prevWi = list(wi)
+				diff = y - linearRegression(example[0])
+				error += diff * diff
+				dWi[i] += -1 * diff * xs[i]
 		for i in range(features):
 			wi[i] -= stepper * dWi[i]
-		print(wi, prevWi)
+		print(error, prevError)
 		input()
 
 #Linear equation for predicting the time to walk a path
-def linearRegression(xs):
+def linearRegression(path):
+	xs = [getElevChange(path), getDistChange(path)]
 	hx = 0
 	for i in range(features):
 		hx += wi[i] * xs[i]
-	return (hx / 1.6)
+	return hx
 
 #Sums the elevation change of each node and neighbor node in the path
 def getElevChange(pathNodes):
@@ -178,11 +175,19 @@ def getElevs(fileName):
 	elevs.byteswap()
 
 #A* search from start to goal
-def aStar(start, goal):
+def aStar(start, goal, linear = True):
 	if start not in nodes:
 		return start + " node not in map."
 	elif goal not in nodes:
 		return goal + "node not in map."
+
+	global wi
+	if linear:
+		costFn = linearRegression
+		if len(wi) == 0:
+			linearAlgebraSolver()
+	else:
+		costFn = nearestNeighbor
 
 	pq = PriorityQueue()
 	pq.put((0, start))
@@ -197,21 +202,21 @@ def aStar(start, goal):
 		cost, current = pq.get()
 
 		if current == goal:
-			minutes = int(costs[goal])
-			seconds = int(100 * (costs[goal] - minutes))
+			minutes = 0
+			seconds = costs[goal]
 			while seconds > 60:
 				seconds -= 60
 				minutes += 1
-			print(nodes[goal])
 			print("Walking Time " + str(minutes) + " minutes and " + str(seconds) + " seconds")
+			print("PATH:")
 			return constructPath(cameFrom, goal)
 
 		for neighbor in graph[current]:
-			newCost = costs[current] + toblers(current, neighbor)
+			newCost = costs[current] + costFn([current, neighbor])
 
 			if neighbor not in costs or newCost < costs[neighbor]:
 				costs[neighbor] = newCost
-				priority = newCost + heuristic(neighbor,goal)
+				priority = newCost + costFn([neighbor,goal])
 				pq.put((priority, neighbor))
 				cameFrom[neighbor] = current
 
@@ -224,7 +229,7 @@ def heuristic(nodeFrom, nodeTo):
 	zSquare = (nodes[nodeTo][4] - nodes[nodeFrom][4]) * (nodes[nodeTo][4] - nodes[nodeFrom][4])
 	return (sqrt(xSquare + ySquare + zSquare) / 1.4) / 60
 
-#Naismith rule used to find minutes to walk between the two nodes given
+#Naismith rule used to find seconds to walk between the two nodes given
 def naiSmith(nodeFrom, nodeTo):
 	if nodeFrom == nodeTo:
 		return 0
@@ -240,9 +245,9 @@ def naiSmith(nodeFrom, nodeTo):
 		xyMins += (elevChange / 300) * 10
 	elif elevChange > 0:
 		xyMins += (elevChange / 600) * 60
-	return xyMins
+	return (xyMins * 60)
 
-#Tobler's Hiking Function used to find minutes to walk between the two nodes given
+#Tobler's Hiking Function used to find seconds to walk between the two nodes given
 def toblers(nodeFrom, nodeTo):
 	if nodeFrom == nodeTo:
 		return 0
@@ -254,7 +259,7 @@ def toblers(nodeFrom, nodeTo):
 
 	w = 6 * pow(e, (-3.5) * (abs((dh/dx) + 0.05)))
 	w = (.06 / w) * dx
-	return w
+	return (w*60)
 
 #Construct the path taken after doing an A* search
 def constructPath(cameFrom, node):
@@ -264,14 +269,26 @@ def constructPath(cameFrom, node):
 		node = cameFrom[node]
 	return path[::-1]
 
-if __name__ == "__main__":
+#Initialize all them goodies
+def initItUp():
+	global tree
 	tree = readXML("dbv.osm")
 	readWalks("walks.txt")
 	generateNodes()
 	generateGraph()
+
+if __name__ == "__main__":
+	initItUp()
+	#linearAlgebraSolver()
 	#gradientDescent()
-	linearAlgebraSolve()
-	print(nearestNeighbor(examples[10][0]))
+	#print(wi)
+	#for example in examples[tests:]:
+	#	print(linearRegression(example[0]), example[1][0])
 	
-	#while(input("Search (Y/N):") == "Y"):
-	#	print(aStar(input("Input Starting Node:"), input("Input Destination Node:")))
+	while(input("Search (Y/N):") == "Y"):
+		start = input("Input Starting Node:")
+		end = input("Input Destination Node:")
+		print("LINEAR REGRESSION-----------------------")
+		print(aStar(start, end))
+		print("NEAREST NEIGHBOR------------------------")
+		print(aStar(start, end, False))
