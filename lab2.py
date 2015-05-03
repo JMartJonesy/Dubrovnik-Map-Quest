@@ -1,6 +1,6 @@
 """
 	Jesse Martinez
-	Lab 1
+	Lab 2
 """
 
 import array
