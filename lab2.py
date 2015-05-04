@@ -73,7 +73,7 @@ def gradientDescent():
 	error = float("inf")
 	prevError = 0
 	stepper = .000000001
-	while abs(error - prevError) > 4:
+	while abs(error - prevError) > 0:
 		dWi = [0 for i in range(features)]
 		prevError = error
 		error = 0
@@ -172,14 +172,14 @@ def getElevs(fileName):
 	elevs.byteswap()
 
 #A* search from start to goal
-def aStar(start, goal, linear = True):
+def aStar(start, goal, choice = 1):
 	if start not in nodes:
 		return start + " node not in map."
 	elif goal not in nodes:
 		return goal + "node not in map."
 
 	global wi
-	if linear:
+	if choice == 1:
 		costFn = linearRegression
 		if len(wi) == 0:
 			linearAlgebraSolver()
@@ -242,7 +242,7 @@ def naiSmith(nodeFrom, nodeTo):
 		xyMins += (elevChange / 300) * 10
 	elif elevChange > 0:
 		xyMins += (elevChange / 600) * 60
-	return (xyMins * 60)
+	return xyMins
 
 #Tobler's Hiking Function used to find seconds to walk between the two nodes given
 def toblers(nodeFrom, nodeTo):
@@ -256,7 +256,7 @@ def toblers(nodeFrom, nodeTo):
 
 	w = 6 * pow(e, (-3.5) * (abs((dh/dx) + 0.05)))
 	w = (.06 / w) * dx
-	return (w*60)
+	return w
 
 #Construct the path taken after doing an A* search
 def constructPath(cameFrom, node):
@@ -282,11 +282,10 @@ if __name__ == "__main__":
 		gradientDescent()
 	else:
 		linearAlgebraSolver()
-
 	while(input("Search (Y/N):") == "Y"):
 		start = input("Input Starting Node:")
 		end = input("Input Destination Node:")
 		print("LINEAR REGRESSION-----------------------")
-		print(aStar(start, end))
+		print(aStar(start, end, 1))
 		print("NEAREST NEIGHBOR------------------------")
-		print(aStar(start, end, False))
+		print(aStar(start, end, 2))
