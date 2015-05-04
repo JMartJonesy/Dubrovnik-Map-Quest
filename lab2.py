@@ -39,8 +39,6 @@ def readWalks(fileName):
 	tests = ceil(.6 * len(examples))
 
 #Find example(s) with closest elevation and distances to the given path
-#	if a single example is found then returns that examples time
-#	else calculates the average of the two found examples
 def nearestNeighbor(path):
 	xs = [getElevChange(path), getDistChange(path)]
 	minElevDiff = float("inf")
@@ -70,26 +68,24 @@ def linearAlgebraSolver():
 #Runs a gradient descent to find the wi values that minimize the square error
 def gradientDescent():
 	global wi, tests
-	#wi = [0 for i in range(features)]
+	wi = [0 for i in range(features)]
 	error = float("inf")
 	prevError = 0
-	stepper = .0001
-
-	while abs(error - prevError) > 30:
+	stepper = .000000001
+	while abs(error - prevError) > 4:
 		dWi = [0 for i in range(features)]
+		prevError = error
+		error = 0
 		for example in examples[:tests]:
 			xs = [getElevChange(example[0]), getDistChange(example[0])]
 			y = example[1][0]
-			prevError = error
-			error = 0
 			for i in range(features):
 				diff = y - linearRegression(example[0])
 				error += diff * diff
-				dWi[i] += -1 * diff * xs[i]
+				dWi[i] += diff * xs[i]
+		
 		for i in range(features):
-			wi[i] -= stepper * dWi[i]
-		print(error, prevError)
-		input()
+			wi[i] += stepper * dWi[i]
 
 #Linear equation for predicting the time to walk a path
 def linearRegression(path):
@@ -279,12 +275,13 @@ def initItUp():
 
 if __name__ == "__main__":
 	initItUp()
-	#linearAlgebraSolver()
-	#gradientDescent()
-	#print(wi)
-	#for example in examples[tests:]:
-	#	print(linearRegression(example[0]), example[1][0])
-	
+	print("Would you like to (1)Gradient Descent or (2)Linear Algebra them wi values???")
+	choice = int(input())
+	if choice == 1:
+		gradientDescent()
+	else:
+		linearAlgebraSolver()
+
 	while(input("Search (Y/N):") == "Y"):
 		start = input("Input Starting Node:")
 		end = input("Input Destination Node:")
