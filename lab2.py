@@ -126,7 +126,7 @@ def smoothDatElevation(lat, lon):
 	bMid = (bLeft[0] + bDiff, bLeft[1], ((1 - bDiff) * bLeft[2]) + (bDiff * bRight[2]))
 
 	mDiff = lon - bMid[1]
-	return (((1 - mDiff) * bMid[2]) * (bDiff * tMid[2]))
+	return (((1 - mDiff) * bMid[2]) + (bDiff * tMid[2]))
 
 #Convert lat and lon to seconds
 def getLatLonSeconds(lat, lon):
@@ -209,17 +209,17 @@ def aStar(start, goal, choice = 1):
 			return constructPath(cameFrom, goal)
 
 		for neighbor in graph[current]:
-			newCost = costs[current] + costFn([current, neighbor])
+			newCost = costs[current] + toblers(current, neighbor)#costFn([current, neighbor])
 
 			if neighbor not in costs or newCost < costs[neighbor]:
 				costs[neighbor] = newCost
-				priority = newCost + costFn([neighbor,goal])
+				priority = newCost + heuristic(neighbor, goal)#costFn([neighbor,goal])
 				pq.put((priority, neighbor))
 				cameFrom[neighbor] = current
 
 	return "No path found between " + start + " and " + goal 
 
-#xyz distance between the two nodes given converted into second using the average walking speed 1.4m/s
+#xyz distance between the two nodes given converted into seconds using the average walking speed 1.4m/s
 def heuristic(nodeFrom, nodeTo):
 	xSquare = (nodes[nodeTo][2] - nodes[nodeFrom][2]) * (nodes[nodeTo][2] - nodes[nodeFrom][2])
 	ySquare = (nodes[nodeTo][3] - nodes[nodeFrom][3]) * (nodes[nodeTo][3] - nodes[nodeFrom][3])
@@ -256,7 +256,7 @@ def toblers(nodeFrom, nodeTo):
 
 	w = 6 * pow(e, (-3.5) * (abs((dh/dx) + 0.05)))
 	w = (.06 / w) * dx
-	return w
+	return (w*60)
 
 #Construct the path taken after doing an A* search
 def constructPath(cameFrom, node):
@@ -282,6 +282,8 @@ if __name__ == "__main__":
 		gradientDescent()
 	else:
 		linearAlgebraSolver()
+	print(wi)
+	print(nodes)
 	while(input("Search (Y/N):") == "Y"):
 		start = input("Input Starting Node:")
 		end = input("Input Destination Node:")
